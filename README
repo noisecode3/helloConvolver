@@ -1,5 +1,5 @@
 This is a filter program that will read a wav file called in.wav
 at the current directory and make a filtered out.wav. This is for
-university programmers, noob programmers how want to learn DSP (like me).
+university programmers, noob programmers who want to learn DSP (like me).
 It uses IFFT to make a kernel and then performs convolution filtering.
 It's all MIT licensed. This is fun!
