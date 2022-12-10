@@ -1,0 +1,4 @@
+*.o
+helloConvolver
+out.wav
+.vimspector.json
