@@ -63,7 +63,7 @@ std::vector<float> getKernel(int sr)
   //This is a brick wall low pass sinc kernel, have fun 
   for (size_t i=0; i<(fftSize/2+1); i++)
   {
-    if (i < cutoff)
+    if (i < cutoff)//bug
       re[i] = 1;
     else
       re[i] = 0;
