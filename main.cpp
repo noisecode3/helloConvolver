@@ -37,12 +37,12 @@
  */
 void printHead(const char* headline, size_t size, int col)
 {
-    for (int i = 0; i < col/2-size/2; i++)
+    for (int i = 0; i < col/2 - size/2; i++)
       std::cout << "_";
 
     std::cout << headline;
 
-    for (int i = 0; i < col/2-size/2; i++)
+    for (int i = 0; i < col/2 - size/2; i++)
       std::cout << "_";
     std::cout << "\n";
 }
@@ -63,7 +63,7 @@ void printHead(const char* headline, size_t size, int col)
 void printBuffer(const float buff[], size_t size, int col, bool scale = 0)
 {
   float scaler = 1;
-  col = col - col%2;
+  col = col - col % 2;
   if (scale)
   {
     float max = fabs(buff[0]);
@@ -71,12 +71,12 @@ void printBuffer(const float buff[], size_t size, int col, bool scale = 0)
       if (fabs(buff[i]) > max)
         max = fabs(buff[i]);
     
-    scaler = (1.0 / max)*0.995;
+    scaler = (1.0 / max);
   }
 
   for(unsigned int i = 0; i < size; i++)
   {
-    int spaces = ceil((col/2)*(scaler*buff[i]+1)) - 1;
+    int spaces = (col/2)*(scaler*buff[i]+1) - 1;
     for (int j = 0; j < spaces; j++)
       std::cout << ' ';
 
@@ -102,7 +102,7 @@ void printBuffer(const float buff[], size_t size, int col, bool scale = 0)
 std::vector<float> getKernel(const int sr, int col, int cutoff = 200, bool print = 1)
 {
   const size_t fftSize = 1024; // Needs to be power of 2!
-  const float binF = (sr/2.0)/(fftSize/2.0);
+  const float binF = (sr/2)/(fftSize/2);
   if (cutoff > sr/2)
     cutoff = sr/2;
 
@@ -117,19 +117,19 @@ std::vector<float> getKernel(const int sr, int col, int cutoff = 200, bool print
   float cf(cutoff/binF - ci);
 
   //This is a brick wall low pass sinc kernel, have fun 
-  for (size_t i = 0; i < fftSize/2+1; i++)
+  for (size_t i = 0; i < fftSize/2 + 1; i++)
   {
     if (i <= ci)
       re[i] = 1;
-    else if (i == ci+1)
+    else if (i == ci + 1)
       re[i] = cf;
     else
       re[i] = 0;
   }
 
-  for (size_t i = 0; i < fftSize/2+1; i++)
+  for (size_t i = 0; i < fftSize/2 + 1; i++)
   {
-    im[i] = sin(-i+ci+cf)/(-i+ci+cf);
+    im[i] = sin(-i + ci + cf)/(-i + ci + cf);
   }
 
   //******************************************************************************
@@ -141,11 +141,11 @@ std::vector<float> getKernel(const int sr, int col, int cutoff = 200, bool print
   if (print)
   {
     printHead("Kernel", 6, col);
-    printBuffer(output.data(), fftSize/2+1, col, true ); //scaled
+    printBuffer(output.data(), fftSize/2 + 1, col, true);
     printHead("Real", 4, col);
-    printBuffer(re.data(), fftSize/2+1, col);
+    printBuffer(re.data(), fftSize/2 + 1, col, true);
     printHead("Imaginary_", 10, col);
-    printBuffer(im.data(), fftSize/2+1, col);
+    printBuffer(im.data(), fftSize/2 + 1, col, true);
   }
   return output;
 }
@@ -164,7 +164,7 @@ int main(int argc, char **argv)
     std::cerr << "specify only one positive integer cutoff" << std::endl;
   }
 
-  int cutoff = 200;
+  int cutoff = 1000;
   if (argc == 2)
   {
     cutoff = atoi(argv[1]);
