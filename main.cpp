@@ -34,12 +34,12 @@
 /********************************************************************
  * printHead - prints a headline
  */
-void printHead(const char* rubrik, int size, int col)
+void printHead(const char* headline, int size, int col)
 {
     for (int i=0; i < col/2-size/2; i++)
       std::cout << "_";
 
-    std::cout << rubrik;
+    std::cout << headline;
 
     for (int i=0; i < col/2-size/2; i++)
       std::cout << "_";
