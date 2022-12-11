@@ -98,11 +98,7 @@ std::vector<float> getKernel(int sr, int col, int cutoff = 200, bool print = 1)
   //This is a brick wall low pass sinc kernel, have fun 
   for (size_t i=0; i<(fftSize/2+1); i++)
   {
-<<<<<<< HEAD
-    if (i < cutoff)//bug
-=======
     if (i <= ci)
->>>>>>> 675d026 (make accurate cutoff)
       re[i] = 1;
     else if (i == ci+1)
       re[i] = cf;
