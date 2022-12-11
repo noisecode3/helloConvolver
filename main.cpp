@@ -32,6 +32,40 @@
 #include "AudioFile.h"
 
 /********************************************************************
+ * printHead - prints a headline
+ */
+void printHead(const char* rubrik, int size, int col)
+{
+    for (int i=0; i < col/2-size/2; i++)
+      std::cout << "_";
+
+    std::cout << rubrik;
+
+    for (int i=0; i < col/2-size/2; i++)
+      std::cout << "_";
+    std::cout << "\n";
+}
+
+/********************************************************************
+ * printBuffer - prints the wave curve to the terminal with stars
+ *
+ * (windowSize/2)×(−1.0+1) = Most to the left
+ * (windowSize/2)×(0.0 +1) = Center
+ * (windowSize/2)×(1.0 +1) = Most to the right of the console (Linux)
+ */
+void printBuffer(const float buff[], unsigned int size, int col, int scale = 1)
+{
+  for(unsigned int i=0; i<size;i++)
+  {
+    int spaces = floor((col/2)*(scale*buff[i]+1));
+    for (int j = 0; j<spaces; j++)
+      std::cout << ' ';
+
+    std::cout << "*\n";
+  }
+}
+
+/********************************************************************
  * getKernel - makes a convolution kernel using the inverse fft
  * In frequency domain with complex number we can specify the desired
  * magnitude (frequency volume) and phase angle (shift of the wave
@@ -42,62 +76,61 @@
  * re[i] = magnitude
  * im[i] = phase angle
  * binF = how much frequency "i" is worth, "zero = 0 here" or dc
+ * sr   = sampleRate
+ * col  = teminal size
  *
  */
-std::vector<float> getKernel(int sr)
+std::vector<float> getKernel(int sr, int col, int cutoff = 200, bool print = 1)
 {
   const size_t fftSize = 1024; // Needs to be power of 2!
-  const int binF = (sr/2)/(fftSize/2);
+  const float binF = (sr/2)/(fftSize/2);
 
   std::vector<float> re(audiofft::AudioFFT::ComplexSize(fftSize));
   std::vector<float> im(audiofft::AudioFFT::ComplexSize(fftSize));
   std::vector<float> output(fftSize);
 
-  int cutoff = 200/binF; //This is not so precise, what frequency
-  //is there between the bins, how can you modify it without using
-  //another fftSize ? Can you make a more steeper wall?
-  
-  //In a spectrum analyser with noise it looks like the last peak
-  //is around 160 and then it steps down like stairs towards 1K, why?
+  //******************************************************************************
+  //                                 The Filter
+  //******************************************************************************
+  int   ci(cutoff/binF);
+  float cf(cutoff/binF-ci);
 
   //This is a brick wall low pass sinc kernel, have fun 
   for (size_t i=0; i<(fftSize/2+1); i++)
   {
+<<<<<<< HEAD
     if (i < cutoff)//bug
+=======
+    if (i <= ci)
+>>>>>>> 675d026 (make accurate cutoff)
       re[i] = 1;
+    else if (i == ci+1)
+      re[i] = cf;
     else
       re[i] = 0;
   }
-  
+
   for (size_t i=0; i<(fftSize/2+1); i++)
   {
-    im[i] = 0;
+    im[i] = sin(-i+ci+cf)/(-i+ci+cf);
   }
-  
+
+  //******************************************************************************
+
   audiofft::AudioFFT fft;
   fft.init(1024);
   fft.ifft(output.data(), re.data(), im.data());
-  
-  return output;
-}
 
-/********************************************************************
- * printBuffer - prints the wave curve to the terminal with stars
- *
- * (windowSize/2)×(−1.0+1) = Most to the left
- * (windowSize/2)×(0.0 +1) = Center
- * (windowSize/2)×(1.0 +1) = Most to the right of the console (Linux)
- */
-void printBuffer(const float buff[], unsigned int size, int col)
-{
-  for(unsigned int i=0; i<size;i++)
+  if (print)
   {
-    int spaces = floor((col/2)*(buff[i]+1));
-    for (int j = 0; j<spaces; j++)
-      std::cout << ' ';
-
-    std::cout << "*\n";
+    printHead("Kernel", 6, col);
+    printBuffer(output.data(), 512, col, 95 ); //scaled
+    printHead("Real", 4, col);
+    printBuffer(re.data(), 512, col);
+    printHead("Imaginary_", 10, col);
+    printBuffer(im.data(), 512, col);
   }
+  return output;
 }
 
 /********************************************************************
@@ -112,7 +145,6 @@ int main(int argc, char **argv)
   if (argc > 1)
   {
     std::cerr << "specify only one wav file (TODO)" << std::endl;
-    //std::cout << argv[1] << std::endl;
   }	
   struct winsize wSize;
   ioctl(STDOUT_FILENO, TIOCGWINSZ, &wSize);
@@ -126,10 +158,7 @@ int main(int argc, char **argv)
 
   int numSamples = audioFile.getNumSamplesPerChannel();
   float lengthInSeconds = audioFile.getLengthInSeconds();
-  std::vector<float> kernel = getKernel(sampleRate);
-
-  //Uncomment if you want to see the kernel printed on terminal
-  //printBuffer(&kernel[0], 512, col);
+  std::vector<float> kernel = getKernel(sampleRate, col);
 
   int fftCalls = numSamples/1024;
   int fftLastCall = numSamples%1024;
@@ -146,11 +175,7 @@ int main(int argc, char **argv)
       {
 	      in[j] = audioFile.samples[0][j+(i*1024)];
       }
-      Convolver.process(&in[0], &out[0], 1024);
-      for (int j = 0; j < 1024; j++)
-      {
-	      audioFile.samples[0][j+(i*1024)] = out[j];
-      }
+      Convolver.process(&in[0], &audioFile.samples[0][i*1024], 1024);
     }
     if (fftLastCall)
     {
@@ -186,13 +211,8 @@ int main(int argc, char **argv)
 	      in1[j] = audioFile.samples[0][j+(i*1024)];
 	      in2[j] = audioFile.samples[1][j+(i*1024)];
       }
-      Convolver1.process(&in1[0], &out1[0], 1024);
-      Convolver2.process(&in2[0], &out2[0], 1024);
-      for (int j = 0; j < 1024; j++)
-      {
-	      audioFile.samples[0][j+(i*1024)] = out1[j];
-	      audioFile.samples[1][j+(i*1024)] = out2[j];
-      }
+      Convolver1.process(&in1[0], &audioFile.samples[0][i*1024], 1024);
+      Convolver2.process(&in2[0], &audioFile.samples[1][i*1024], 1024);
     }
     if (fftLastCall)
     {
@@ -206,7 +226,7 @@ int main(int argc, char **argv)
 	      in1[i] = 0;
 	      in2[i] = 0;
       }
-      Convolver1.process(&in1[0], &out1[0], 1024);
+      Convolver1.process(&in1[0],&audioFile.samples[0][fftCalls*1024],1024);
       Convolver2.process(&in2[0], &out2[0], 1024);
       for (int i = 0; i < fftLastCall; i++)
       {
